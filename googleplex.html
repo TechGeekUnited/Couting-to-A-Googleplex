@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<p>Counting from 0 to a googleplex:</p>
+<p id="count"></p>
+<p id="timer"></p>
+<p id="estimatedTime"></p>
+<button id="save" onclick="saveProgress()">Save Progress</button>
+<button id="resume" style="display:none" onclick="resumeCounting()">Resume Counting</button>
+<input type="file" id="fileInput" style="display:none" onchange="resumeFromFile()">
+
+<script>
+var count = 0;
+var target = 10**100; // a googleplex
+var numbers = "";
+var startTime;
+var intervalId;
+var estimatedTimeIntervalId;
+
+function countUp() {
+    if (count < target) {
+        numbers += count + "\n";
+        if(count % 100 === 0){
+            document.getElementById("count").innerHTML = count;
+        }
+        count++;
+        if(count % 1000000 === 0){
+            saveProgress();
+        }
+        setTimeout(countUp, 0);
+    } else {
+        clearInterval(intervalId);
+        clearInterval(estimatedTimeIntervalId);
+        downloadFile(numbers);
+    }
+}
+
+function startTimer() {
+    startTime = new Date();
+    intervalId = setInterval(function(){
+        var currentTime = new Date();
+        var timeElapsed = currentTime - startTime;
+var years = Math.floor(timeElapsed / (1000 * 60 * 60 * 24 * 365));
+        var months = Math.floor((timeElapsed % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+        var weeks = Math.floor((timeElapsed % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24 * 7));
+        var days = Math.floor((timeElapsed % (1000 * 60 * 60 * 24 * 7)) / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((timeElapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
+        document.getElementById("timer").innerHTML = "Time Elapsed: " + years + "y " + months + "m " + weeks + "w " + days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+    }, 1000);
+    estimatedTimeIntervalId = setInterval(function(){
+        var currentTime = new Date();
+        var timeElapsed = currentTime - startTime;
+        var totalTime = timeElapsed / count;
+        var estimatedTime = (target - count) * totalTime;
+        var estimatedTimeInYears = estimatedTime / (1000*60*60*24*365);
+        document.getElementById("estimatedTime").innerHTML = "Estimated time to reach a googleplex: " + estimatedTimeInYears.toFixed(2) + " years";
+    }, 10000);
+}
+
+function saveProgress() {
+    var timeElapsed = document.getElementById("timer").innerHTML;
+    var estimatedTime = document.getElementById("estimatedTime").innerHTML;
+    var file = new Blob([count + "," + numbers + "," + timeElapsed + "," + estimatedTime], { type: 'text/plain' });
+    var a = document.createElement("a"),
+            url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = count + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    document.getElementById("resume").style.display = "block";
+    document.getElementById("fileInput").style.display = "block";
+}
+function resumeCounting() {
+    var timeElapsed = document.getElementById("timer").innerHTML;
+    var estimatedTime = document.getElementById("estimatedTime").innerHTML;
+    var fileInput = document.getElementById("fileInput");
+    fileInput.style.display = "block";
+    fileInput.addEventListener("change", function(){
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+        reader.onload = function(){
+            var data = reader.result;
+            var dataArray = data.split(",");
+            count = parseInt(dataArray[0]);
+            numbers = dataArray[1];
+            document.getElementById("count").innerHTML = count;
+            document.getElementById("timer").innerHTML = dataArray[2];
+            document.getElementById("estimatedTime").innerHTML = dataArray[3];
+            document.getElementById("resume").style.display = "none";
+            document.getElementById("fileInput").style.display = "none";
+            startTimer();
+            countUp();
+        };
+        reader.readAsText(file);
+    });
+}
+
+function resumeFromFile() {
+    var fileInput = document.getElementById("fileInput");
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    reader.onload = function(){
+        var data = reader.result;
+        var dataArray = data.split(",");
+        count = parseInt(dataArray[0]);
+        numbers = dataArray[1];
+        document.getElementById("count").innerHTML = count;
+        document.getElementById("timer").innerHTML = dataArray[2];
+        document.getElementById("estimatedTime").innerHTML = dataArray[3];
+        document.getElementById("resume").style.display = "none";
+        document.getElementById("fileInput").style.display = "none";
+        startTimer();
+        countUp();
+    };
+    reader.readAsText(file);
+}
+
+function downloadFile(data) {
+    var file = new Blob([data], { type: 'text/plain' });
+    var a = document.createElement("a"),
+            url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = "googleplex.txt";
+    document.body.appendChild(a);
+    a.click();
+}
+startTimer();
+countUp();
+</script>
+</body>
+</html>
